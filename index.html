@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>International Morse Code</title>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+output {
+  display: block;
+  margin: 1em;
+}
+  </style>
+</head>
+
+<body>
+
+<main>
+<h1>International Morse Code</h1>
+
+<form id="messageForm" name="messageForm" action="" method="get">
+<p><label for="message">Message:</label>
+<input type="text" id="message" name="message" autofocus required pattern="[A-Za-z0-9 ]+" placeholder="MORSE CODE" spellcheck="true">
+<button type="submit">Draw</button></p>
+</form>
+
+<p>Message can only be letters, digits, or space.</p>
+
+<output id="dotDash" name="dotDash" for="messageForm"></output>
+
+<p>Circular <a href="https://en.wikipedia.org/wiki/Morse_code" target="_blank">Morse code</a>
+dots and dashes in the style of
+<a href="https://en.wikipedia.org/wiki/The_Promised_Neverland" target="_blank">The Promised Neverland</a>
+which does not code space between words.</p>
+
+<output id="stamp" name="stamp" for="messageForm"></output>
+</main>
+
+<script>
+/*
+ * Regular expression matching a valid message.
+ */
+const MESSAGE_REGULAR_EXPRESSION = /^([A-Z0-9 ]+)$/;
+
+/*
+ * Regular expression matching a valid pattern: string of "0" and "1".
+ */
+const PATTERN_REGULAR_EXPRESSION = /^([01]+)$/;
+
+/*
+ * Width in pixels of each unit in the dot dash output.
+ */
+const UNIT_WIDTH = 5;
+
+/*
+ * Map from a character to its bit pattern.
+ *
+ * A dot is one unit.
+ * A dash is three units.
+ * Space between parts of the same letter is one unit.
+ * Space between letters is three units.
+ * Space between words is seven units.
+ */
+const MORSE_MAP = new Map([
+  ['A', '10111'],
+  ['B', '111010101'],
+  ['C', '11101011101'],
+  ['D', '1110101'],
+  ['E', '1'],
+  ['F', '101011101'],
+  ['G', '111011101'],
+  ['H', '1010101'],
+  ['I', '101'],
+  ['J', '1011101110111'],
+  ['K', '111010111'],
+  ['L', '101110101'],
+  ['M', '1110111'],
+  ['N', '11101'],
+  ['O', '11101110111'],
+  ['P', '10111011101'],
+  ['Q', '1110111010111'],
+  ['R', '1011101'],
+  ['S', '10101'],
+  ['T', '111'],
+  ['U', '1010111'],
+  ['V', '101010111'],
+  ['W', '101110111'],
+  ['X', '11101010111'],
+  ['Y', '1110101110111'],
+  ['Z', '11101110101'],
+  // Compensate for the 3 units between letters
+  [' ', '0000'],
+  ['0', '1110111011101110111'],
+  ['1', '10111011101110111'],
+  ['2', '101011101110111'],
+  ['3', '1010101110111'],
+  ['4', '10101010111'],
+  ['5', '101010101'],
+  ['6', '11101010101'],
+  ['7', '1110111010101'],
+  ['8', '111011101110101'],
+  ['9', '11101110111011101']
+]);
+
+/*
+ * Return if str is a valid length long message.
+ */
+function isValid(str, length = -1) {
+  if ((length == undefined) || (length <= 0)) {
+    return MESSAGE_REGULAR_EXPRESSION.test(str);
+  }
+  else if (MESSAGE_REGULAR_EXPRESSION.test(str)) {
+    return (str.length === length);
+  }
+  return false;
+}
+
+/*
+ * Return if str is a length long string of "0" and "1".
+ */
+function isPattern(str, length = -1) {
+  if ((length == undefined) || (length <= 0)) {
+    return PATTERN_REGULAR_EXPRESSION.test(str);
+  }
+  else if (PATTERN_REGULAR_EXPRESSION.test(str)) {
+    return (str.length === length);
+  }
+  return false;
+}
+
+/*
+ * Return the bit pattern in Morse code for message.
+ */
+function messageToBitPattern(message) {
+  let result = [],
+      last;
+  for (let c of message) {
+    if (MORSE_MAP.has(c)) {
+      if ((last != null) && MORSE_MAP.has(last) && (last !== ' ')) {
+        // Space between letters is three units
+        result.push('000');
+      }
+      result.push(MORSE_MAP.get(c));
+      last = c;
+    }
+  }
+  return result.join('');
+}
+
+/*
+ * Unit tests
+ */
+function test() {
+  for (let value of ['', 'abcd', 'foo', 'f00', '8ar', 'foobar', 'f008ar']) {
+    console.assert(!isValid(value),
+                   {msg: 'isValid() failed.'});
+    console.assert(!isValid(value, value.length),
+                   {msg: 'isValid() failed.'});
+    if (value.length > 0) {
+      console.assert(isValid(value.toUpperCase()),
+                     {msg: 'isValid() failed.'});
+      console.assert(isValid(value.toUpperCase(), value.length),
+                     {msg: 'isValid() failed.'});
+    }
+
+    console.assert(!isPattern(value),
+                   {msg: 'isPattern() failed.'});
+    console.assert(!isPattern(value, value.length),
+                   {msg: 'isPattern() failed.'});
+  }
+  for (let value of ['41', '1234', '042100005264', '0042100005264',
+                     '065100004327', '165100004324']) {
+    console.assert(isValid(value),
+                   {msg: 'isValid() failed.'});
+    console.assert(!isPattern(value),
+                   {msg: 'isPattern() failed.'});
+  }
+  for (let value of ['foo bar', 'foo_bar', 'foo/bar', 'FOO_BAR', 'FOO/BAR']) {
+    console.assert(!isValid(value),
+                   {msg: 'isValid() failed.'});
+    console.assert(!isPattern(value),
+                   {msg: 'isPattern() failed.'});
+  }
+
+  for (let [value, expected] of [
+    ['0', '1'],
+    ['1', '0'],
+    ['00', '11'],
+    ['01', '10'],
+    ['10', '01'],
+    ['11', '00'],
+    ['000', '111'],
+    ['001', '110'],
+    ['010', '101'],
+    ['011', '100'],
+    ['100', '011'],
+    ['101', '010'],
+    ['110', '001'],
+    ['111', '000']
+  ]) {
+    console.assert(isValid(value),
+                   {msg: 'isValid() failed.'});
+    console.assert(isValid(expected),
+                   {msg: 'isValid() failed.'});
+    console.assert(isValid(value, value.length),
+                   {msg: 'isValid() failed.'});
+    console.assert(isValid(expected, expected.length),
+                   {msg: 'isValid() failed.'});
+    console.assert(!isValid(value, 10),
+                   {msg: 'isValid() failed.'});
+    console.assert(!isValid(expected, 10),
+                   {msg: 'isValid() failed.'});
+
+    console.assert(isPattern(value),
+                   {msg: 'isPattern() failed.'});
+    console.assert(isPattern(expected),
+                   {msg: 'isPattern() failed.'});
+    console.assert(isPattern(value, value.length),
+                   {msg: 'isPattern() failed.'});
+    console.assert(isPattern(expected, expected.length),
+                   {msg: 'isPattern() failed.'});
+    console.assert(!isPattern(value, 10),
+                   {msg: 'isPattern() failed.'});
+    console.assert(!isPattern(expected, 10),
+                   {msg: 'isPattern() failed.'});
+  }
+
+  console.assert(messageToBitPattern('MORSE') === '1110111000111011101110001011101000101010001',
+                 {msg: 'messageToBitPattern() failed.'});
+  console.assert(messageToBitPattern('CODE') === '111010111010001110111011100011101010001',
+                 {msg: 'messageToBitPattern() failed.'});
+  console.assert(messageToBitPattern('MORSE CODE') === '11101110001110111011100010111010001010100010000000111010111010001110111011100011101010001',
+                 {msg: 'messageToBitPattern() failed.'});
+  // The actual SOS is a prosign
+  console.assert(messageToBitPattern('SOS') === '101010001110111011100010101',
+                 {msg: 'messageToBitPattern() failed.'});
+  for (let [message, expected] of MORSE_MAP) {
+    console.assert(messageToBitPattern(message) === expected,
+                   {msg: 'messageToBitPattern() failed.'});
+  }
+}
+test();
+
+function drawDotDash(parentID, bitPattern, height = 10) {
+  let parent = document.querySelector(parentID),
+      target = parent.querySelector('canvas'),
+      width = bitPattern.length * UNIT_WIDTH;
+  if (target == null) {
+    parent.innerHTML = '';
+    target = document.createElement('canvas');
+    parent.appendChild(target);
+  }
+  if ((target.width != width) || (target.height != height)) {
+    target.width = width;
+    target.height = height;
+  }
+
+  let context = target.getContext('2d'),
+      x = 0;
+  context.clearRect(0, 0, width, height);
+  for (let c of bitPattern) {
+    if (c === '1') {
+      context.fillRect(x, 0, UNIT_WIDTH, height);
+    }
+    x += UNIT_WIDTH;
+  }
+}
+
+function drawStamp(parentID, bitPattern, size = 300, radius = 140) {
+  let parent = document.querySelector(parentID),
+      target = parent.querySelector('canvas');
+  if (target == null) {
+    parent.innerHTML = '';
+    target = document.createElement('canvas');
+    parent.appendChild(target);
+  }
+  if ((target.width != size) || (target.height != size)) {
+    target.width = size;
+    target.height = size;
+  }
+  // Replace spaces in bitPattern and add trailing separator
+  bitPattern = bitPattern.replace('0000000', '000') + '000';
+
+  let context = target.getContext('2d'),
+      x = Math.floor(size / 2),
+      y = Math.floor(size / 2),
+      // Starting angle is upperleft corner based on season 2 episode 1
+      angle = -Math.PI * 3 / 4,
+      unit = Math.PI * 2 / bitPattern.length;
+  context.clearRect(0, 0, size, size);
+
+  context.lineWidth = 10;
+
+  // Temporarily write 'WM' in place of an owl
+  context.font = '96px serif';
+  context.textAlign = 'right';
+  context.textBaseline = 'bottom';
+  context.fillText('W', x, y);
+  context.textAlign = 'left';
+  context.textBaseline = 'top';
+  context.fillText('M', x, y);
+
+  for (let c of bitPattern) {
+    if (c === '1') {
+      context.beginPath();
+      context.arc(x, y, radius, angle, angle + unit, false);
+      context.stroke();
+    }
+    angle += unit;
+  }
+}
+
+const form = document.querySelector('#messageForm');
+form.addEventListener('submit', (event) => {
+  let message = form.message.value.toUpperCase().replace(/\s+/g, ' '),
+      bitPattern;
+  if (isValid(message)) {
+    bitPattern = messageToBitPattern(message);
+    drawDotDash('#dotDash', bitPattern);
+    drawStamp('#stamp', bitPattern);
+  }
+  event.preventDefault();
+});
+</script>
+</body>
+
+</html>
