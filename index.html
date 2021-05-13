@@ -248,7 +248,8 @@ test();
 function drawDotDash(parentID, bitPattern, height = 10) {
   let parent = document.querySelector(parentID),
       target = parent.querySelector('canvas'),
-      width = bitPattern.length * UNIT_WIDTH;
+      length = bitPattern.length,
+      width = length * UNIT_WIDTH;
   if (target == null) {
     parent.innerHTML = '';
     target = document.createElement('canvas');
@@ -261,7 +262,6 @@ function drawDotDash(parentID, bitPattern, height = 10) {
 
   let context = target.getContext('2d'),
       i = 0,
-      length = bitPattern.length,
       duration;
   context.clearRect(0, 0, width, height);
   while (i < length) {
@@ -294,9 +294,11 @@ function drawStamp(parentID, bitPattern, size = 300, radius = 140) {
   let context = target.getContext('2d'),
       x = Math.floor(size / 2),
       y = Math.floor(size / 2),
+      i = 0,
       // Starting angle is upperleft corner based on season 2 episode 1
       angle = -Math.PI * 3 / 4,
-      unit = Math.PI * 2 / bitPattern.length;
+      length = bitPattern.length,
+      unit = Math.PI * 2 / length;
   context.clearRect(0, 0, size, size);
 
   context.lineWidth = 10;
@@ -310,13 +312,17 @@ function drawStamp(parentID, bitPattern, size = 300, radius = 140) {
   context.textBaseline = 'top';
   context.fillText('M', x, y);
 
-  for (let c of bitPattern) {
-    if (c === '1') {
+  while (i < length) {
+    duration = 1;
+    if (bitPattern.charAt(i) === '1') {
+      while (((i + duration) < length) && (bitPattern.charAt(i + duration) === '1')) {
+        duration += 1;
+      }
       context.beginPath();
-      context.arc(x, y, radius, angle, angle + unit, false);
+      context.arc(x, y, radius, angle + (i * unit), angle + ((i + duration) * unit), false);
       context.stroke();
     }
-    angle += unit;
+    i += duration;
   }
 }
 
