@@ -26,6 +26,7 @@ output {
 <p><label for="message">Message:</label>
 <input type="text" id="message" name="message" autofocus required pattern="[A-Za-z0-9 ]+" placeholder="MORSE CODE" spellcheck="true">
 <button type="submit">Draw</button></p>
+<p><button type="button" id="play">Play</button></p>
 </form>
 
 <p>Message can only be letters, digits, or space.</p>
@@ -298,7 +299,8 @@ function drawStamp(parentID, bitPattern, size = 300, radius = 140) {
       // Starting angle is upperleft corner based on season 2 episode 1
       angle = -Math.PI * 3 / 4,
       length = bitPattern.length,
-      unit = Math.PI * 2 / length;
+      unit = Math.PI * 2 / length,
+      duration;
   context.clearRect(0, 0, size, size);
 
   context.lineWidth = 10;
@@ -326,6 +328,32 @@ function drawStamp(parentID, bitPattern, size = 300, radius = 140) {
   }
 }
 
+/*
+ * Play bitPattern as A4 tones at a rate of 10 standard words of 50 dot durations per minute.
+ */
+function play(bitPattern, rate = 60/(10 * 50)) {
+  const context = new (window.AudioContext || window.webkitAudioContext)();
+  const length = bitPattern.length;
+  let i = 0,
+      duration, oscillator;
+  while (i < length) {
+    duration = 1;
+    if (bitPattern.charAt(i) === '1') {
+      while (((i + duration) < length) && (bitPattern.charAt(i + duration) === '1')) {
+        duration += 1;
+      }
+      // Create the oscillator to generate the actual tone
+      oscillator = context.createOscillator();
+      oscillator.connect(context.destination);
+      oscillator.type = 'sine';
+      oscillator.frequency.value = 440;
+      oscillator.start(context.currentTime + (i * rate));
+      oscillator.stop(context.currentTime + ((i + duration) * rate));
+    }
+    i += duration;
+  }
+}
+
 const form = document.querySelector('#messageForm');
 form.addEventListener('submit', (event) => {
   let message = form.message.value.toUpperCase().replace(/\s+/g, ' '),
@@ -334,6 +362,16 @@ form.addEventListener('submit', (event) => {
     bitPattern = messageToBitPattern(message);
     drawDotDash('#dotDash', bitPattern);
     drawStamp('#stamp', bitPattern);
+  }
+  event.preventDefault();
+});
+const playButton = document.querySelector('#play');
+playButton.addEventListener('click', (event) => {
+  let message = form.message.value.toUpperCase().replace(/\s+/g, ' '),
+      bitPattern;
+  if (isValid(message)) {
+    bitPattern = messageToBitPattern(message);
+    play(bitPattern);
   }
   event.preventDefault();
 });
