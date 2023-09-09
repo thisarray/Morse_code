@@ -22,10 +22,12 @@ output {
 <main>
 <h1>International Morse Code</h1>
 
-<form id="messageForm" name="messageForm" action="" method="get">
-<p><label for="message">Message:</label>
+<form id="messageForm" name="messageForm">
+<p><label>Message:
 <input type="text" id="message" name="message" autofocus required pattern="[A-Za-z0-9 ]+" placeholder="MORSE CODE" spellcheck="true">
+</label>
 <button type="submit">Draw</button></p>
+
 <p><button type="button" id="play">Play</button></p>
 </form>
 
@@ -53,7 +55,7 @@ const MESSAGE_REGULAR_EXPRESSION = /^([A-Z0-9 ]+)$/;
 const PATTERN_REGULAR_EXPRESSION = /^([01]+)$/;
 
 /*
- * Width in pixels of each unit in the dot dash output.
+ * Integer width in pixels of each unit in the dot dash output.
  */
 const UNIT_WIDTH = 5;
 
@@ -108,7 +110,7 @@ const MORSE_MAP = new Map([
 ]);
 
 /*
- * Return if str is a valid length long message.
+ * Return true if str is a valid length long message.
  */
 function isValid(str, length = -1) {
   if ((length == undefined) || (length <= 0)) {
@@ -121,7 +123,7 @@ function isValid(str, length = -1) {
 }
 
 /*
- * Return if str is a length long string of "0" and "1".
+ * Return true if str is a length long string of "0" and "1".
  */
 function isPattern(str, length = -1) {
   if ((length == undefined) || (length <= 0)) {
