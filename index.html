@@ -299,7 +299,7 @@ function drawStamp(parentID, bitPattern, size = 300, radius = 140) {
       y = Math.floor(size / 2),
       i = 0,
       // Starting angle is upperleft corner based on season 2 episode 1
-      angle = -Math.PI * 3 / 4,
+      start = -Math.PI * 3 / 4,
       length = bitPattern.length,
       unit = Math.PI * 2 / length,
       duration;
@@ -323,7 +323,7 @@ function drawStamp(parentID, bitPattern, size = 300, radius = 140) {
         duration += 1;
       }
       context.beginPath();
-      context.arc(x, y, radius, angle + (i * unit), angle + ((i + duration) * unit), false);
+      context.arc(x, y, radius, start + (i * unit), start + ((i + duration) * unit), false);
       context.stroke();
     }
     i += duration;
@@ -356,9 +356,9 @@ function play(bitPattern, rate = 60/(10 * 50)) {
   }
 }
 
-const form = document.querySelector('#messageForm');
-form.addEventListener('submit', (event) => {
-  let message = form.message.value.toUpperCase().replace(/\s+/g, ' '),
+const FORM = document.querySelector('#messageForm');
+FORM.addEventListener('submit', (event) => {
+  let message = FORM.message.value.toUpperCase().replace(/\s+/g, ' '),
       bitPattern;
   if (isValid(message)) {
     bitPattern = messageToBitPattern(message);
@@ -367,12 +367,14 @@ form.addEventListener('submit', (event) => {
   }
   event.preventDefault();
 });
-const playButton = document.querySelector('#play');
-playButton.addEventListener('click', (event) => {
-  let message = form.message.value.toUpperCase().replace(/\s+/g, ' '),
+const PLAY_BUTTON = document.querySelector('#play');
+PLAY_BUTTON.addEventListener('click', (event) => {
+  let message = FORM.message.value.toUpperCase().replace(/\s+/g, ' '),
       bitPattern;
   if (isValid(message)) {
     bitPattern = messageToBitPattern(message);
+    drawDotDash('#dotDash', bitPattern);
+    drawStamp('#stamp', bitPattern);
     play(bitPattern);
   }
   event.preventDefault();
