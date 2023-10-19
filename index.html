@@ -189,7 +189,7 @@ function test() {
                    {msg: 'isPattern() failed.'});
   }
 
-  for (let [value, expected] of [
+  for (let [value, inverse] of [
     ['0', '1'],
     ['1', '0'],
     ['00', '11'],
@@ -207,28 +207,28 @@ function test() {
   ]) {
     console.assert(isValid(value),
                    {msg: 'isValid() failed.'});
-    console.assert(isValid(expected),
+    console.assert(isValid(inverse),
                    {msg: 'isValid() failed.'});
     console.assert(isValid(value, value.length),
                    {msg: 'isValid() failed.'});
-    console.assert(isValid(expected, expected.length),
+    console.assert(isValid(inverse, inverse.length),
                    {msg: 'isValid() failed.'});
     console.assert(!isValid(value, 10),
                    {msg: 'isValid() failed.'});
-    console.assert(!isValid(expected, 10),
+    console.assert(!isValid(inverse, 10),
                    {msg: 'isValid() failed.'});
 
     console.assert(isPattern(value),
                    {msg: 'isPattern() failed.'});
-    console.assert(isPattern(expected),
+    console.assert(isPattern(inverse),
                    {msg: 'isPattern() failed.'});
     console.assert(isPattern(value, value.length),
                    {msg: 'isPattern() failed.'});
-    console.assert(isPattern(expected, expected.length),
+    console.assert(isPattern(inverse, inverse.length),
                    {msg: 'isPattern() failed.'});
     console.assert(!isPattern(value, 10),
                    {msg: 'isPattern() failed.'});
-    console.assert(!isPattern(expected, 10),
+    console.assert(!isPattern(inverse, 10),
                    {msg: 'isPattern() failed.'});
   }
 
@@ -252,20 +252,21 @@ function drawDotDash(parentID, bitPattern, height = 10) {
   let parent = document.querySelector(parentID),
       target = parent.querySelector('canvas'),
       length = bitPattern.length,
-      width = length * UNIT_WIDTH;
+      width = length * UNIT_WIDTH,
+      i = 0,
+      context,
+      duration;
   if (target == null) {
     parent.innerHTML = '';
     target = document.createElement('canvas');
     parent.appendChild(target);
   }
-  if ((target.width != width) || (target.height != height)) {
+  if ((target.width !== width) || (target.height !== height)) {
     target.width = width;
     target.height = height;
   }
 
-  let context = target.getContext('2d'),
-      i = 0,
-      duration;
+  context = target.getContext('2d');
   context.clearRect(0, 0, width, height);
   while (i < length) {
     duration = 1;
@@ -281,33 +282,36 @@ function drawDotDash(parentID, bitPattern, height = 10) {
 
 function drawStamp(parentID, bitPattern, size = 300, radius = 140) {
   let parent = document.querySelector(parentID),
-      target = parent.querySelector('canvas');
+      target = parent.querySelector('canvas'),
+      length = bitPattern.length,
+      // Coordinates for the center of the stamp
+      x = Math.floor(size / 2),
+      y = Math.floor(size / 2),
+      // Starting angle is upperleft corner based on season 2 episode 1
+      start = -Math.PI * 3 / 4,
+      unit = Math.PI * 2 / length,
+      i = 0,
+      context,
+      duration;
   if (target == null) {
     parent.innerHTML = '';
     target = document.createElement('canvas');
     parent.appendChild(target);
   }
-  if ((target.width != size) || (target.height != size)) {
+  if ((target.width !== size) || (target.height !== size)) {
     target.width = size;
     target.height = size;
   }
+
   // Replace spaces in bitPattern and add trailing separator
   bitPattern = bitPattern.replace('0000000', '000') + '000';
 
-  let context = target.getContext('2d'),
-      x = Math.floor(size / 2),
-      y = Math.floor(size / 2),
-      i = 0,
-      // Starting angle is upperleft corner based on season 2 episode 1
-      start = -Math.PI * 3 / 4,
-      length = bitPattern.length,
-      unit = Math.PI * 2 / length,
-      duration;
+  context = target.getContext('2d');
   context.clearRect(0, 0, size, size);
 
   context.lineWidth = 10;
 
-  // Temporarily write 'WM' in place of an owl
+  // Write 'WM' in place of an owl
   context.font = '96px serif';
   context.textAlign = 'right';
   context.textBaseline = 'bottom';
@@ -337,7 +341,8 @@ function play(bitPattern, rate = 60/(10 * 50)) {
   const context = new (window.AudioContext || window.webkitAudioContext)();
   const length = bitPattern.length;
   let i = 0,
-      duration, oscillator;
+      duration,
+      oscillator;
   while (i < length) {
     duration = 1;
     if (bitPattern.charAt(i) === '1') {
